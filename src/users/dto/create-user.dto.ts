@@ -17,16 +17,3 @@ export class CreateUserDto {
   @IsDateString()
   dateOfBirth!: string;
 }
-id        Int      @id @default(autoincrement())
-name      String
-email     String   @unique
-password  String
-cpf       String   @unique
-birthDate DateTime
-role      Role     @default(USER)
-
-createdAt DateTime @default(now())
-updateAt  DateTime @updatedAt
-
-accounts  Account[]
-addresses Address[]
