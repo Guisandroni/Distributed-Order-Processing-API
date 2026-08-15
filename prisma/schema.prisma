@@ -21,19 +21,18 @@ model User {
   dateOfBirth DateTime
   createdAt   DateTime @default(now())
   updateAt    DateTime @updatedAt
-  posts       Post[]
 }
 
-model Post {
-  id        Int      @id @default(autoincrement())
-  title     String
-  slug      String   @unique
-  content   String
+//sku identificador comercial
+model Product {
+  id          Int     @id @default(autoincrement())
+  sku         String  @unique
+  name        String
+  description String?
+  price       Decimal @db.Decimal(10, 2)
+  stock       Int     @default(0)
+  active      Boolean @default(true)
+
   createdAt DateTime @default(now())
-  updateAt  DateTime @updatedAt
-
-  author User @relation(fields: [userId], references: [id])
-  userId Int
-
-  @@index([userId])
+  updatedAt DateTime @updatedAt
 }
