@@ -1,13 +1,13 @@
 services:
   postgres:
     image: postgres:17-alpine
-    container_name: nest-postgres
+    container_name: order-platform-postgres
     restart: unless-stopped
 
     environment:
-      POSTGRES_USER: nestjsCrud
-      POSTGRES_PASSWORD: nestjsCrud
-      POSTGRE_DB: nestjsCrud
+      POSTGRES_USER: nestjpostgres
+      POSTGRES_PASSWORD: nestjpostgres
+      POSTGRES_DB: order_platform
 
     ports:
       - 2020:5432
