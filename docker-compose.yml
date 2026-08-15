@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: nest-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: nestjsCrud
+      POSTGRES_PASSWORD: nestjsCrud
+      POSTGRE_DB: nestjsCrud
+
+    ports:
+      - 2020:5432
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
