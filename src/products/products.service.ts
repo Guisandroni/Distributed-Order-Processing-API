@@ -6,7 +6,6 @@ import {
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotFoundError } from 'rxjs';
 
 @Injectable()
 export class ProductsService {
