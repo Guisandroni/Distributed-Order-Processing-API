@@ -6,13 +6,12 @@ import {
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '../../generated/prisma/client';
+import { OrderStatus, Prisma } from '../../generated/prisma/client';
 
 @Injectable()
 export class OrdersService {
   constructor(private readonly prisma: PrismaService) {}
   async create(createOrderDto: CreateOrderDto, userId: number) {
-    //procurando os produtos e identificando apenas os id com map
     const productsIds = [
       ...new Set(createOrderDto.items.map((item) => item.productId)),
     ];
@@ -26,7 +25,6 @@ export class OrdersService {
       },
     });
 
-    //validacao de buscas
     if (products.length !== productsIds.length) {
       throw new NotFoundException(
         'One or more products do not exist or are inactive',
@@ -45,7 +43,7 @@ export class OrdersService {
 
       if (product.stock < item.quantity) {
         throw new BadRequestException(
-          `Insufficient stock for product ${product.name}`,
+          `Insuficient stock for product ${product.name}`,
         );
       }
 
@@ -96,60 +94,62 @@ export class OrdersService {
     });
   }
 
-  async findAll(userId: number) {
-    const data = await this.prisma.order.findMany({
-      where: {
-        userId,
-      },
-      include: {
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                sku: true,
-                name: true,
-              },
-            },
-          },
-        },
-
-        payments: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    return data;
-  }
-
-  async findOne(id: number, userId: number) {
-    const data = await this.prisma.order.findFirst({
+  async cancel(id: number, userId: number) {
+    const order = await this.prisma.order.findFirst({
+      //pedido de tal id pertencente ao user de tal id
       where: {
         id,
         userId,
       },
+
       include: {
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                sku: true,
-                name: true,
-              },
-            },
-          },
-        },
-        payments: true,
+        items: true,
       },
     });
 
-    if (!data) {
+    if (!order) {
       throw new NotFoundException('Order not found');
     }
-    return data;
+
+    if (order.status !== OrderStatus.PENDING) {
+      throw new BadRequestException(
+        `Only pending ${order.status} can be cancelled`,
+      );
+    }
+
+    return this.prisma.$transaction(async (txPrisma) => {
+      const cancelledOrder = await txPrisma.order.update({
+        where: {
+          id: order.id,
+        },
+        data: {
+          status: OrderStatus.CANCELLED,
+        },
+      });
+
+      for (const item of order.items) {
+        await txPrisma.product.update({
+          where: {
+            id: item.productId,
+          },
+
+          data: {
+            stock: {
+              increment: item.quantity,
+            },
+          },
+        });
+      }
+
+      return cancelledOrder;
+    });
+  }
+
+  findAll() {
+    return this.prisma.order.findMany();
+  }
+  findOne(id: number) {
+    return `This action returns a #${id} order`;
   }
 
   update(id: number, updateOrderDto: UpdateOrderDto) {

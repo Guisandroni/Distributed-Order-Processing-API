@@ -35,27 +35,29 @@ export class OrdersController {
   }
 
   @UseGuards(AuthGuard)
-  @Get()
-  findAll(@Req() request: AuthenticatedRequest) {
-    return this.ordersService.findAll(request.user.sub);
-  }
-
-  @UseGuards(AuthGuard)
-  @Get(':id')
-  findOne(
+  @Post(':id/cancel')
+  cancel(
     @Param('id', ParseIntPipe) id: number,
     @Req() request: AuthenticatedRequest,
   ) {
-    return this.ordersService.findOne(id, request.user.sub);
+    return this.ordersService.cancel(id, request.user.sub);
   }
 
-  @UseGuards(AuthGuard)
+  @Get()
+  findAll() {
+    return this.ordersService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.ordersService.findOne(+id);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
     return this.ordersService.update(+id, updateOrderDto);
   }
 
-  @UseGuards(AuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.ordersService.remove(+id);
