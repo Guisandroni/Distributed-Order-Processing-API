@@ -12,6 +12,7 @@ import { Prisma } from '../../generated/prisma/client';
 export class OrdersService {
   constructor(private readonly prisma: PrismaService) {}
   async create(createOrderDto: CreateOrderDto, userId: number) {
+    //procurando os produtos e identificando apenas os id com map
     const productsIds = [
       ...new Set(createOrderDto.items.map((item) => item.productId)),
     ];
@@ -25,6 +26,7 @@ export class OrdersService {
       },
     });
 
+    //validacao de buscas
     if (products.length !== productsIds.length) {
       throw new NotFoundException(
         'One or more products do not exist or are inactive',
@@ -43,7 +45,7 @@ export class OrdersService {
 
       if (product.stock < item.quantity) {
         throw new BadRequestException(
-          `Insuficient stock for product ${product.name}`,
+          `Insufficient stock for product ${product.name}`,
         );
       }
 
@@ -94,12 +96,60 @@ export class OrdersService {
     });
   }
 
-  findAll() {
-    return this.prisma.order.findMany();
+  async findAll(userId: number) {
+    const data = await this.prisma.order.findMany({
+      where: {
+        userId,
+      },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                sku: true,
+                name: true,
+              },
+            },
+          },
+        },
+
+        payments: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return data;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} order`;
+  async findOne(id: number, userId: number) {
+    const data = await this.prisma.order.findFirst({
+      where: {
+        id,
+        userId,
+      },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                sku: true,
+                name: true,
+              },
+            },
+          },
+        },
+        payments: true,
+      },
+    });
+
+    if (!data) {
+      throw new NotFoundException('Order not found');
+    }
+    return data;
   }
 
   update(id: number, updateOrderDto: UpdateOrderDto) {

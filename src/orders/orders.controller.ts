@@ -8,6 +8,7 @@ import {
   Delete,
   Req,
   UseGuards,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -33,21 +34,28 @@ export class OrdersController {
     return this.ordersService.create(createOrderDto, request.user.sub);
   }
 
+  @UseGuards(AuthGuard)
   @Get()
-  findAll() {
-    return this.ordersService.findAll();
+  findAll(@Req() request: AuthenticatedRequest) {
+    return this.ordersService.findAll(request.user.sub);
   }
 
+  @UseGuards(AuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.ordersService.findOne(+id);
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.ordersService.findOne(id, request.user.sub);
   }
 
+  @UseGuards(AuthGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
     return this.ordersService.update(+id, updateOrderDto);
   }
 
+  @UseGuards(AuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.ordersService.remove(+id);
