@@ -5,10 +5,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotFoundError } from 'rxjs';
 import { OrderStatus, PaymentStatus } from '../../generated/prisma/enums';
 import { Order } from '../orders/entities/order.entity';
+import { PaymentsPublisher } from '../messaging/messaging.payments.publisher';
 
 @Injectable()
 export class PaymentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly paymentPublisher: PaymentsPublisher,
+  ) {}
 
   async process(orderId: number, userId: number) {
     const order = await this.prisma.order.findFirst({
@@ -38,7 +42,7 @@ export class PaymentsService {
     }
 
     return this.prisma.$transaction(async (txPrisma) => {
-      const payment = await this.prisma.payment.create({
+      const payment = await txPrisma.payment.create({
         data: {
           orderId: order.id,
           amount: order.total,
@@ -54,6 +58,12 @@ export class PaymentsService {
         data: {
           status: OrderStatus.PROCESSING,
         },
+      });
+      this.paymentPublisher.publishPaymentRequested({
+        paymentId: payment.id,
+        orderId: order.id,
+        userId: order.userId,
+        amount: payment.amount.toString(),
       });
 
       return payment;
