@@ -13,17 +13,16 @@ import {
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
-import type { JwtPayload } from '../auth/types/jwt-payload.type';
 import { AuthGuard } from '../auth/auth.guard';
-import type { Request } from 'express';
-
-type AuthenticatedRequest = Request & {
-  user: JwtPayload;
-};
+import { PaymentsService } from '../payments/payments.service';
+import type { AuthenticatedRequest } from '../auth/types/jwt-payload.type';
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(
+    private readonly ordersService: OrdersService,
+    private readonly paymentsService: PaymentsService,
+  ) {}
 
   @UseGuards(AuthGuard)
   @Post()
@@ -61,5 +60,32 @@ export class OrdersController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.ordersService.remove(+id);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post(':id/payment')
+  payment(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.paymentsService.process(id, request.user.sub);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('payments/:id/approve')
+  approvePayment(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.paymentsService.approve(id, request.user.sub);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('payments/:id/fail')
+  failPayment(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.paymentsService.fail(id, request.user.sub);
   }
 }
