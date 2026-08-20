@@ -19,23 +19,23 @@ import { AuthGuard } from '../auth/auth.guard';
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
-  @UseGuards(AuthGuard)
-  @Post('payments/:id/fail')
-  approvePayment(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() request: AuthenticatedRequest,
-  ) {
-    return this.paymentsService.approve(id, request.user.sub);
-  }
+  // @UseGuards(AuthGuard)
+  // @Post('payments/:id/fail')
+  // approvePayment(
+  //   @Param('id', ParseIntPipe) id: number,
+  //   @Req() request: AuthenticatedRequest,
+  // ) {
+  //   return this.paymentsService.approve(id, request.user.sub);
+  // }
 
-  @UseGuards(AuthGuard)
-  @Post('payments/:id/fail')
-  failPayment(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() request: AuthenticatedRequest,
-  ) {
-    return this.paymentsService.fail(id, request.user.sub);
-  }
+  // @UseGuards(AuthGuard)
+  // @Post('payments/:id/fail')
+  // failPayment(
+  //   @Param('id', ParseIntPipe) id: number,
+  //   @Req() request: AuthenticatedRequest,
+  // ) {
+  //   return this.paymentsService.fail(id, request.user.sub);
+  // }
 
   @Get()
   findAll() {

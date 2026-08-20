@@ -18,6 +18,14 @@ export class PaymentsPublisher
   ) {}
 
   async onApplicationBootstrap() {
+    // this.client.status.subscribe((status) => {
+    //   console.log(`[RMQ CONSUMER STATUS]: ${status}`);
+    // });
+
+    // this.client.on( (error) => {
+    //   console.error(error);
+    // });
+
     await this.client.connect();
   }
 

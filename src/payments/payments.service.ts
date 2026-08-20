@@ -1,10 +1,13 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotFoundError } from 'rxjs';
 import { OrderStatus, PaymentStatus } from '../../generated/prisma/enums';
-import { Order } from '../orders/entities/order.entity';
 import { PaymentsPublisher } from '../messaging/messaging.payments.publisher';
 
 @Injectable()
@@ -41,10 +44,10 @@ export class PaymentsService {
       throw new BadRequestException('Order already have payment exists');
     }
 
-    return this.prisma.$transaction(async (txPrisma) => {
+    const payment = await this.prisma.$transaction(async (txPrisma) => {
       const payment = await txPrisma.payment.create({
         data: {
-          orderId: order.id,
+          orderId,
           amount: order.total,
           status: PaymentStatus.PROCESSING,
         },
@@ -59,40 +62,42 @@ export class PaymentsService {
           status: OrderStatus.PROCESSING,
         },
       });
-      this.paymentPublisher.publishPaymentRequested({
-        paymentId: payment.id,
-        orderId: order.id,
-        userId: order.userId,
-        amount: payment.amount.toString(),
-      });
-
       return payment;
     });
-  }
 
-  async approve(paymentId: number, userId: number) {
-    const payment = await this.prisma.payment.findFirst({
-      where: {
-        id: paymentId,
-        order: {
-          userId,
-        },
-      },
-
-      include: {
-        order: true,
-      },
+    this.paymentPublisher.publishPaymentRequested({
+      paymentId: payment.id,
+      orderId: order.id,
+      userId,
+      amount: payment.amount.toString(),
     });
 
-    if (!payment) {
-      throw new NotFoundError('Payment not found');
-    }
+    return payment;
+  }
 
-    if (payment.status !== PaymentStatus.PROCESSING) {
-      throw new BadRequestException(
-        `Payment with status ${payment.status} cannot be paid`,
-      );
-    }
+  private async approve(payment: { id: number; orderId: number }) {
+    // const payment = await this.prisma.payment.findFirst({
+    //   where: {
+    //     id: paymentId,
+    //     order: {
+    //       userId,
+    //     },
+    //   },
+
+    //   include: {
+    //     order: true,
+    //   },
+    // });
+
+    // if (!payment) {
+    //   throw new NotFoundError('Payment not found');
+    // }
+
+    // if (payment.status !== PaymentStatus.PROCESSING) {
+    //   throw new BadRequestException(
+    //     `Payment with status ${payment.status} cannot be paid`,
+    //   );
+    // }
 
     return this.prisma.$transaction(async (txPrisma) => {
       const approvePayment = await this.prisma.payment.update({
@@ -118,33 +123,42 @@ export class PaymentsService {
     });
   }
 
-  async fail(paymentId: number, userId: number) {
-    const payment = await this.prisma.payment.findFirst({
-      where: {
-        id: paymentId,
-        order: {
-          userId,
-        },
-      },
+  private async fail(payment: {
+    id: number;
+    orderId: number;
+    order: {
+      items: {
+        productId: number;
+        quantity: number;
+      }[];
+    };
+  }) {
+    // const payment = await this.prisma.payment.findFirst({
+    //   where: {
+    //     id: paymentId,
+    //     order: {
+    //       userId,
+    //     },
+    //   },
 
-      include: {
-        order: {
-          include: {
-            items: true,
-          },
-        },
-      },
-    });
+    //   include: {
+    //     order: {
+    //       include: {
+    //         items: true,
+    //       },
+    //     },
+    //   },
+    // });
 
-    if (!payment) {
-      throw new NotFoundError('Payment not found');
-    }
+    // if (!payment) {
+    //   throw new NotFoundError('Payment not found');
+    // }
 
-    if (payment.status !== PaymentStatus.PROCESSING) {
-      throw new BadRequestException(
-        `Payment with status ${payment.status} cannot be paid`,
-      );
-    }
+    // if (payment.status !== PaymentStatus.PROCESSING) {
+    //   throw new BadRequestException(
+    //     `Payment with status ${payment.status} cannot be paid`,
+    //   );
+    // }
 
     return this.prisma.$transaction(async (txPrisma) => {
       const failedPayment = await this.prisma.payment.update({
@@ -182,6 +196,37 @@ export class PaymentsService {
 
       return failedPayment;
     });
+  }
+
+  async processRequestedPayment(paymentId: number) {
+    const payment = await this.prisma.payment.findUnique({
+      where: {
+        id: paymentId,
+      },
+
+      include: {
+        order: {
+          include: {
+            items: true,
+          },
+        },
+      },
+    });
+
+    if (!payment) {
+      throw new NotFoundException('Payment not found');
+    }
+
+    if (payment.status !== PaymentStatus.PROCESSING) {
+      return payment;
+    }
+    const approved = Math.random() < 0.8;
+
+    if (approved) {
+      return this.approve(payment);
+    }
+
+    return this.fail(payment);
   }
 
   create(createPaymentDto: CreatePaymentDto) {

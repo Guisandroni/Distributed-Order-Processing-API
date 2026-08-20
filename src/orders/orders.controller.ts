@@ -71,21 +71,21 @@ export class OrdersController {
     return this.paymentsService.process(id, request.user.sub);
   }
 
-  @UseGuards(AuthGuard)
-  @Post('payments/:id/approve')
-  approvePayment(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() request: AuthenticatedRequest,
-  ) {
-    return this.paymentsService.approve(id, request.user.sub);
-  }
+  // @UseGuards(AuthGuard)
+  // @Post('payments/:id/approve')
+  // approvePayment(
+  //   @Param('id', ParseIntPipe) id: number,
+  //   @Req() request: AuthenticatedRequest,
+  // ) {
+  //   return this.paymentsService.approve(id, request.user.sub);
+  // }
 
-  @UseGuards(AuthGuard)
-  @Post('payments/:id/fail')
-  failPayment(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() request: AuthenticatedRequest,
-  ) {
-    return this.paymentsService.fail(id, request.user.sub);
-  }
+  // @UseGuards(AuthGuard)
+  // @Post('payments/:id/fail')
+  // failPayment(
+  //   @Param('id', ParseIntPipe) id: number,
+  //   @Req() request: AuthenticatedRequest,
+  // ) {
+  //   return this.paymentsService.fail(id, request.user.sub);
+  // }
 }

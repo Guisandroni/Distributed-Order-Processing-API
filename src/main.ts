@@ -30,7 +30,7 @@ async function bootstrap() {
     SwaggerModule.createDocument(app, configSwagger);
   SwaggerModule.setup('docs', app, documentFactory);
 
-  app.connectMicroservice<MicroserviceOptions>({
+  const rmqServer = app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.RMQ,
 
     options: {
@@ -44,6 +44,16 @@ async function bootstrap() {
       noAck: false,
     },
   });
+
+  rmqServer.status.subscribe((status) => {
+    console.log(`[RMQ CONSUMER STATUS]: ${status}`);
+  });
+
+  rmqServer.on('error', (error) => {
+    console.error(`[RMQ CONSUMER ERROR]`, error);
+  });
+
+  await app.startAllMicroservices();
 
   await app.listen(process.env.PORT ?? 3333);
 }
