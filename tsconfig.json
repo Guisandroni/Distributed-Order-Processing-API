@@ -20,6 +20,14 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "baseUrl": "./",
+    "paths": {
+      "@lib/prisma": ["libs/prisma/src"],
+      "@lib/prisma/*": ["libs/prisma/src/*"],
+      "@lib/contracts": ["libs/contracts/src"],
+      "@lib/contracts/*": ["libs/contracts/src/*"]
+    }
+
   }
 }

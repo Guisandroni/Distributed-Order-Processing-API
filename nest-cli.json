@@ -1,8 +1,50 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "src",
+  "sourceRoot": "apps/simple-crud-nestjs/src",
   "compilerOptions": {
-    "deleteOutDir": true
+    "deleteOutDir": true,
+    "webpack": false,
+    "tsConfigPath": "apps/simple-crud-nestjs/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/simple-crud-nestjs",
+  "projects": {
+    "payment-worker": {
+      "type": "application",
+      "root": "apps/payment-worker",
+      "entryFile": "main",
+      "sourceRoot": "apps/payment-worker/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/payment-worker/tsconfig.app.json"
+      }
+    },
+    "prisma": {
+      "type": "library",
+      "root": "libs/prisma",
+      "entryFile": "index",
+      "sourceRoot": "libs/prisma/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/prisma/tsconfig.lib.json"
+      }
+    },
+    "contracts": {
+      "type": "library",
+      "root": "libs/contracts",
+      "entryFile": "index",
+      "sourceRoot": "libs/contracts/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/contracts/tsconfig.lib.json"
+      }
+    },
+    "simple-crud-nestjs": {
+      "type": "application",
+      "root": "apps/simple-crud-nestjs",
+      "entryFile": "main",
+      "sourceRoot": "apps/simple-crud-nestjs/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/simple-crud-nestjs/tsconfig.app.json"
+      }
+    }
   }
 }
