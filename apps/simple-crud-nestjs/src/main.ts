@@ -19,14 +19,35 @@ async function bootstrap() {
   );
 
   const configSwagger = new DocumentBuilder()
-    .setTitle('NestJs Domain Drive')
-    .setDescription('The api envolve orders by products with payment and users')
-    .setVersion('1.0')
+    .setTitle('Order Platform API')
+    .setDescription(
+      'API para gerenciamento de usuários, produtos, pedidos e pagamentos.',
+    )
+    .setVersion('1.0.0')
+    .addTag('auth', 'Autenticação e criação de contas')
+    .addTag('users', 'Gerenciamento de usuários')
+    .addTag('products', 'Catálogo e estoque de produtos')
+    .addTag('orders', 'Pedidos e processamento de pagamentos')
+    .addTag('payments', 'Consulta e manutenção de pagamentos')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Informe o token JWT obtido em POST /auth/login.',
+      },
+      'access-token',
+    )
     .build();
 
   const documentFactory = () =>
     SwaggerModule.createDocument(app, configSwagger);
-  SwaggerModule.setup('docs', app, documentFactory);
+  SwaggerModule.setup('docs', app, documentFactory, {
+    customSiteTitle: 'Order Platform API Docs',
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+  });
 
   // const rmqServer = app.connectMicroservice<MicroserviceOptions>({
   //   transport: Transport.RMQ,
@@ -55,4 +76,4 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 3333);
 }
-bootstrap();
+void bootstrap();
