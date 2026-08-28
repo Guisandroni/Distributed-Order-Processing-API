@@ -17,10 +17,12 @@
     "start:prod": "node dist/apps/simple-crud-nestjs/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
+    "test:integration": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./apps/simple-crud-nestjs/test/jest-integration.json --runInBand",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./apps/simple-crud-nestjs/test/jest-e2e.json"
+    "test:e2e": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./apps/simple-crud-nestjs/test/jest-e2e.json --runInBand",
+    "test:e2e:distributed": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./apps/simple-crud-nestjs/test/jest-distributed-e2e.json --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "^11.2.1",
@@ -94,7 +96,12 @@
       "<rootDir>/libs/"
     ],
     "moduleNameMapper": {
-      "^y/prisma(|/.*)$": "<rootDir>/libs/prisma/src/$1"
+      "^@lib/prisma$": "<rootDir>/libs/prisma/src",
+      "^@lib/prisma/(.*)$": "<rootDir>/libs/prisma/src/$1",
+      "^@lib/contracts$": "<rootDir>/libs/contracts/src",
+      "^@lib/contracts/(.*)$": "<rootDir>/libs/contracts/src/$1",
+      "^generated/(.*)$": "<rootDir>/generated/$1",
+      "^(\\.{1,2}/.*)\\.js$": "$1"
     }
   }
 }

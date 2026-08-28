@@ -1,8 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { PrismaService, OrderStatus, PaymentStatus } from '@lib/prisma';
-import { NotFoundError } from 'rxjs';
 import { PaymentsPublisher } from '../messaging/messaging.payments.publisher';
 
 @Injectable()
@@ -26,7 +29,9 @@ export class PaymentsService {
     });
 
     if (!order) {
-      throw new NotFoundError('Order not found');
+      // A exceção deve vir do Nest para a camada HTTP responder com status 404.
+      // `NotFoundError` do RxJS possui outro propósito e resultaria em erro 500.
+      throw new NotFoundException('Order not found');
     }
 
     if (order.status !== OrderStatus.PENDING) {

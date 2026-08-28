@@ -30,27 +30,61 @@ export class OrdersService {
       );
     }
 
+    const requestedQuantityByProduct = new Map<number, number>();
     let total = new Prisma.Decimal(0);
+
     for (const item of createOrderDto.items) {
-      const product = products.find(
-        (products) => products.id === item.productId,
-      );
+      const product = products.find((product) => product.id === item.productId);
 
       if (!product) {
         throw new NotFoundException(`Product ${item.productId} not found`);
       }
 
-      if (product.stock < item.quantity) {
+      requestedQuantityByProduct.set(
+        item.productId,
+        (requestedQuantityByProduct.get(item.productId) ?? 0) + item.quantity,
+      );
+      total = total.add(product.price.mul(item.quantity));
+    }
+
+    for (const [productId, quantity] of requestedQuantityByProduct) {
+      const product = products.find((product) => product.id === productId)!;
+
+      if (product.stock < quantity) {
         throw new BadRequestException(
           `Insuficient stock for product ${product.name}`,
         );
       }
-
-      total = total.add(product.price.mul(item.quantity));
     }
 
     return this.prisma.$transaction(async (txPrisma) => {
-      const order = await txPrisma.order.create({
+      for (const [productId, quantity] of requestedQuantityByProduct) {
+        // A condição e o decremento formam uma única escrita atômica no
+        // PostgreSQL. Duas transações não conseguem reservar a mesma unidade.
+        const reservation = await txPrisma.product.updateMany({
+          where: {
+            id: productId,
+            active: true,
+            stock: {
+              gte: quantity,
+            },
+          },
+          data: {
+            stock: {
+              decrement: quantity,
+            },
+          },
+        });
+
+        if (reservation.count !== 1) {
+          const product = products.find((product) => product.id === productId)!;
+          throw new BadRequestException(
+            `Insuficient stock for product ${product.name}`,
+          );
+        }
+      }
+
+      return txPrisma.order.create({
         data: {
           userId,
           total,
@@ -67,7 +101,6 @@ export class OrdersService {
             }),
           },
         },
-
         include: {
           items: {
             include: {
@@ -76,20 +109,6 @@ export class OrdersService {
           },
         },
       });
-
-      for (const item of createOrderDto.items) {
-        await txPrisma.product.update({
-          where: {
-            id: item.productId,
-          },
-          data: {
-            stock: {
-              decrement: item.quantity,
-            },
-          },
-        });
-      }
-      return order;
     });
   }
 
