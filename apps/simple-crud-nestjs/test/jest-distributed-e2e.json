@@ -3,7 +3,7 @@
   "rootDir": "../../..",
   "roots": ["<rootDir>/apps/simple-crud-nestjs/test"],
   "testEnvironment": "node",
-  "testRegex": ".*\\.e2e-spec\\.ts$",
+  "testRegex": ".*\\.distributed-spec\\.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },

@@ -3,15 +3,13 @@
   "rootDir": "../../..",
   "roots": ["<rootDir>/apps/simple-crud-nestjs/test"],
   "testEnvironment": "node",
-  "testRegex": ".*\\.e2e-spec\\.ts$",
+  "testRegex": ".*\\.integration-spec\\.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
   "moduleNameMapper": {
     "^@lib/prisma$": "<rootDir>/libs/prisma/src",
     "^@lib/prisma/(.*)$": "<rootDir>/libs/prisma/src/$1",
-    "^@lib/contracts$": "<rootDir>/libs/contracts/src",
-    "^@lib/contracts/(.*)$": "<rootDir>/libs/contracts/src/$1",
     "^generated/(.*)$": "<rootDir>/generated/$1",
     "^(\\.{1,2}/.*)\\.js$": "$1"
   }

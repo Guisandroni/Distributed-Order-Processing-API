@@ -37,31 +37,10 @@ export class PaymentWorkerService {
   }
 
   private async approve(payment: { id: number; orderId: number }) {
-    // const payment = await this.prisma.payment.findFirst({
-    //   where: {
-    //     id: paymentId,
-    //     order: {
-    //       userId,
-    //     },
-    //   },
-
-    //   include: {
-    //     order: true,
-    //   },
-    // });
-
-    // if (!payment) {
-    //   throw new NotFoundError('Payment not found');
-    // }
-
-    // if (payment.status !== PaymentStatus.PROCESSING) {
-    //   throw new BadRequestException(
-    //     `Payment with status ${payment.status} cannot be paid`,
-    //   );
-    // }
-
     return this.prisma.$transaction(async (txPrisma) => {
-      const approvePayment = await this.prisma.payment.update({
+      // Todas as escritas usam `txPrisma`. Usar `this.prisma` aqui faria a
+      // atualização do pagamento escapar do rollback da transação.
+      const approvedPayment = await txPrisma.payment.update({
         where: {
           id: payment.id,
         },
@@ -74,13 +53,12 @@ export class PaymentWorkerService {
         where: {
           id: payment.orderId,
         },
-
         data: {
           status: OrderStatus.PAID,
         },
       });
 
-      return approvePayment;
+      return approvedPayment;
     });
   }
 
@@ -94,35 +72,10 @@ export class PaymentWorkerService {
       }[];
     };
   }) {
-    // const payment = await this.prisma.payment.findFirst({
-    //   where: {
-    //     id: paymentId,
-    //     order: {
-    //       userId,
-    //     },
-    //   },
-
-    //   include: {
-    //     order: {
-    //       include: {
-    //         items: true,
-    //       },
-    //     },
-    //   },
-    // });
-
-    // if (!payment) {
-    //   throw new NotFoundError('Payment not found');
-    // }
-
-    // if (payment.status !== PaymentStatus.PROCESSING) {
-    //   throw new BadRequestException(
-    //     `Payment with status ${payment.status} cannot be paid`,
-    //   );
-    // }
-
     return this.prisma.$transaction(async (txPrisma) => {
-      const failedPayment = await this.prisma.payment.update({
+      // Pagamento, pedido e reposição de estoque formam uma única operação.
+      // Se qualquer escrita falhar, o PostgreSQL pode reverter todas elas.
+      const failedPayment = await txPrisma.payment.update({
         where: {
           id: payment.id,
         },
@@ -135,13 +88,12 @@ export class PaymentWorkerService {
         where: {
           id: payment.orderId,
         },
-
         data: {
           status: OrderStatus.FAILED,
         },
       });
 
-      //caso realmente o  pagamento de falha, a quantidade da ordem e devolvida ao estoque
+      // Quando o pagamento falha, cada item reservado volta ao estoque.
       for (const item of payment.order.items) {
         await txPrisma.product.update({
           where: {
