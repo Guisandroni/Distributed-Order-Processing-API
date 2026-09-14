@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { UsersModule } from './users/users.module';
 import { PrismaModule } from '@lib/prisma';
 import { AuthModule } from './auth/auth.module';
@@ -12,6 +13,8 @@ import { MessagingModule } from './messaging/messaging.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+
+    ScheduleModule.forRoot(),
 
     PrismaModule,
     UsersModule,

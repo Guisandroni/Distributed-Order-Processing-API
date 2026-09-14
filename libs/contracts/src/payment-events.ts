@@ -6,6 +6,14 @@ export const constants = {
   paymentRequested: 'payment.requested',
   paymentRequestedEvent: 'PAYMENT_REQUESTED_EVENT',
 
+  paymentRequestedRetryQueue: 'payment.requested.retry',
+
+  paymentsResultsQueue: 'payments.results',
+  paymentApproved: 'payment.approved',
+  paymentFailed: 'payment.failed',
+  paymentApprovedEvent: 'PAYMENT_APPROVED_EVENT',
+  paymentFailedEvent: 'PAYMENT_FAILED_EVENT',
+
   paymentsDeadLetterExchange: 'payments.dlx',
   paymentsDeadLetterQueue: 'payment.requested.dlq',
   paymentsDeadLetterRoutingKey: 'payment.requested.dead',
@@ -26,3 +34,21 @@ export type PaymentRequestedPayload = {
 };
 
 export type PaymentRequestedEvent = DomainEvent<PaymentRequestedPayload>;
+
+export type PaymentApprovedPayload = {
+  paymentId: number;
+  orderId: number;
+  userId: number;
+  amount: string;
+};
+
+export type PaymentFailedPayload = {
+  paymentId: number;
+  orderId: number;
+  userId: number;
+  amount: string;
+  reason: string;
+};
+
+export type PaymentApprovedEvent = DomainEvent<PaymentApprovedPayload>;
+export type PaymentFailedEvent = DomainEvent<PaymentFailedPayload>;
