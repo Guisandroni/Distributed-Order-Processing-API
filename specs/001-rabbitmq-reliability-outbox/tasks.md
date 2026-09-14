@@ -20,7 +20,7 @@
 
 - [X] T001 Install `@nestjs/schedule` via pnpm in `package.json` (outbox poll loop, gated in plan.md)
 - [X] T002 [P] Add `MAX_RETRIES`, `RETRY_TTL_MS`, `OUTBOX_POLL_MS`, `OUTBOX_BATCH_SIZE` to `.env.example`
-- [ ] T003 [P] Bring up isolated test stack and migrate it via `docker-compose.test.yml` (`docker compose -f docker-compose.test.yml up -d`, then `prisma migrate deploy` with test `DATABASE_URL`)
+- [X] T003 [P] Bring up isolated test stack and migrate it via `docker-compose.test.yml` (`docker compose -f docker-compose.test.yml up -d`, then `prisma migrate deploy` with test `DATABASE_URL`)
 
 ---
 
