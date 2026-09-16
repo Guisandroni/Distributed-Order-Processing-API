@@ -50,14 +50,14 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T009 [P] [US1] Unit test for x-death attempt routing (retry while attempts < MAX_RETRIES, DLQ when exhausted, NonRetryableError straight to DLQ) in `apps/payment-worker/src/payments-events.controller.spec.ts`
-- [ ] T010 [P] [US1] Unit test for error classification (not-found/invalid payload/invalid transition raise NonRetryableError; timeouts/unknown raise RetryableError) in `apps/payment-worker/src/payment-worker.service.spec.ts`
+- [X] T009 [P] [US1] Unit test for x-death attempt routing (retry while attempts < MAX_RETRIES, DLQ when exhausted, NonRetryableError straight to DLQ) in `apps/payment-worker/src/payments-events.controller.spec.ts`
+- [X] T010 [P] [US1] Unit test for error classification (not-found/invalid payload/invalid transition raise NonRetryableError; timeouts/unknown raise RetryableError) in `apps/payment-worker/src/payment-worker.service.spec.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Throw classified errors (`NonRetryableError` for not-found/invalid/terminal-violation, `RetryableError` otherwise) in `apps/payment-worker/src/payment-worker.service.ts`
-- [ ] T012 [US1] Rework consumer in `apps/payment-worker/src/payments-events.controller.ts`: remove `throw new Error('testing DQL')`; derive the current attempt from RabbitMQ `x-death` history; read `MAX_RETRIES` (default 3) and `RETRY_TTL_MS` (default 5000) from environment; for a `RetryableError` with attempts remaining, republish the original `message.content` unchanged via `channel.sendToQueue(payment.requested.retry, ...)` preserving properties/headers and `ack` the original only after successful publication; for an exhausted retryable error or any `NonRetryableError`, use `channel.nack(message, false, false)` so the main-queue DLX routes it to the DLQ; log every decision with eventId + attempt + classification (depends on T006, T007, T011)
-- [ ] T013 [US1] Distributed drill for transient-failure recovery (assert successful-processing ACK and queue drain), and 3-failures-to-DLQ with `x-death` history (assert DLQ placement, inspectable via message headers and the management UI) in `apps/simple-crud-nestjs/test/payment-flow.distributed-spec.ts` (depends on T012)
+- [X] T011 [US1] Throw classified errors (`NonRetryableError` for not-found/invalid/terminal-violation, `RetryableError` otherwise) in `apps/payment-worker/src/payment-worker.service.ts`
+- [X] T012 [US1] Rework consumer in `apps/payment-worker/src/payments-events.controller.ts`: remove `throw new Error('testing DQL')`; derive the current attempt from RabbitMQ `x-death` history; read `MAX_RETRIES` (default 3) and `RETRY_TTL_MS` (default 5000) from environment; for a `RetryableError` with attempts remaining, republish the original `message.content` unchanged via `channel.sendToQueue(payment.requested.retry, ...)` preserving properties/headers and `ack` the original only after successful publication; for an exhausted retryable error or any `NonRetryableError`, use `channel.nack(message, false, false)` so the main-queue DLX routes it to the DLQ; log every decision with eventId + attempt + classification (depends on T006, T007, T011)
+- [X] T013 [US1] Distributed drill for transient-failure recovery (assert successful-processing ACK and queue drain), and 3-failures-to-DLQ with `x-death` history (assert DLQ placement, inspectable via message headers and the management UI) in `apps/simple-crud-nestjs/test/payment-flow.distributed-spec.ts` (depends on T012)
 
 **Checkpoint**: User Story 1 fully functional and independently testable (SC-001, SC-002)
 

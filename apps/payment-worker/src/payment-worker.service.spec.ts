@@ -1,5 +1,5 @@
-import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { NonRetryableError } from '../../../libs/contracts/src/processing-errors';
 import { OrderStatus, PaymentStatus, Prisma, PrismaService } from '@lib/prisma';
 import { PaymentWorkerService } from './payment-worker.service';
 
@@ -66,7 +66,7 @@ describe('PaymentWorkerService (PaymentProcessor)', () => {
     jest.restoreAllMocks();
   });
 
-  it('rejeita quando o pagamento solicitado não existe', async () => {
+  it('rejeita como não-retentável quando o pagamento solicitado não existe', async () => {
     // Arrange: o Prisma não encontra o ID enviado pelo evento.
     prismaMock.payment.findUnique.mockResolvedValue(null);
 
@@ -78,8 +78,8 @@ describe('PaymentWorkerService (PaymentProcessor)', () => {
       capturedError = error;
     }
 
-    // Assert: o processor publica o erro de domínio e não inicia transação.
-    expect(capturedError).toBeInstanceOf(NotFoundException);
+    // Assert: erro permanente (vai direto para a DLQ) e não inicia transação.
+    expect(capturedError).toBeInstanceOf(NonRetryableError);
     expect(capturedError).toMatchObject({ message: 'Payment not found' });
     expect(prismaMock.$transaction).not.toHaveBeenCalled();
     expect(prismaMock.payment.findUnique).toHaveBeenCalledWith({
@@ -93,22 +93,46 @@ describe('PaymentWorkerService (PaymentProcessor)', () => {
   });
 
   it.each([PaymentStatus.APPROVED, PaymentStatus.FAILED])(
-    'é idempotente para o status terminal %s',
+    'rejeita como não-retentável a reentrada no status terminal %s',
     async (status) => {
-      // Arrange: pagamentos terminais não devem ser processados novamente.
+      // Arrange: pagamentos terminais não admitem nova transição.
       const terminalPayment = { ...processingPayment, status };
       prismaMock.payment.findUnique.mockResolvedValue(terminalPayment);
       const randomSpy = jest.spyOn(Math, 'random');
 
-      // Act: o método público recebe um pagamento já finalizado.
-      const result = await service.processRequestedPayment(30);
+      // Act: capturamos a exceção de transição inválida.
+      let capturedError: unknown;
+      try {
+        await service.processRequestedPayment(30);
+      } catch (error) {
+        capturedError = error;
+      }
 
-      // Assert: retorna a própria fixture sem aleatoriedade nem escrita.
-      expect(result).toBe(terminalPayment);
+      // Assert: erro permanente sem aleatoriedade nem escrita.
+      expect(capturedError).toBeInstanceOf(NonRetryableError);
       expect(randomSpy).not.toHaveBeenCalled();
       expect(prismaMock.$transaction).not.toHaveBeenCalled();
     },
   );
+
+  it('propaga erro desconhecido sem classificá-lo como permanente', async () => {
+    // Arrange: falha de infraestrutura não permite decidir pela mensagem.
+    const infraError = new Error('connection reset');
+    prismaMock.payment.findUnique.mockRejectedValue(infraError);
+
+    // Act: o erro atravessa o service sem conversão para permanente.
+    let capturedError: unknown;
+    try {
+      await service.processRequestedPayment(30);
+    } catch (error) {
+      capturedError = error;
+    }
+
+    // Assert: erro desconhecido permanece retentável (o consumer decide pelo retry).
+    expect(capturedError).toBe(infraError);
+    expect(capturedError).not.toBeInstanceOf(NonRetryableError);
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
 
   it('aprova quando a amostra aleatória é menor que 0.8', async () => {
     // Arrange: 0.79 escolhe deterministicamente o ramo de aprovação.

@@ -108,6 +108,9 @@ importers:
       concurrently:
         specifier: ^10.0.5
         version: 10.0.5
+      cron:
+        specifier: ^4.4.0
+        version: 4.4.0
       eslint:
         specifier: ^9.39.5
         version: 9.39.5(jiti@2.7.0)(supports-color@10.2.2)

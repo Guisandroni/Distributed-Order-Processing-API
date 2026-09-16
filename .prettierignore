@@ -3,4 +3,5 @@ dist/
 build/
 coverage/
 pnpm-lock.yaml
+apps/simple-crud-nestjs/test/vendor/
 *.log

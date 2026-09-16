@@ -144,12 +144,17 @@ describe('PaymentsService', () => {
     });
 
     // O evento usa apenas dados públicos e converte Decimal para string.
-    expect(publisherMock.publishPaymentRequested).toHaveBeenCalledWith({
-      paymentId: 30,
-      orderId: 8,
-      userId: 7,
-      amount: '26',
-    });
+    expect(publisherMock.publishPaymentRequested).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'payment.requested',
+        payload: {
+          paymentId: 30,
+          orderId: 8,
+          userId: 7,
+          amount: '26',
+        },
+      }),
+    );
   });
 
   it('não publica evento quando a transação falha', async () => {

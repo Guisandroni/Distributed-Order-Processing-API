@@ -1,5 +1,6 @@
 import { PrismaService, OrderStatus, PaymentStatus } from '@lib/prisma';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { NonRetryableError } from '../../../libs/contracts/src/processing-errors';
 
 @Injectable()
 export class PaymentWorkerService {
@@ -21,11 +22,13 @@ export class PaymentWorkerService {
     });
 
     if (!payment) {
-      throw new NotFoundException('Payment not found');
+      throw new NonRetryableError('Payment not found');
     }
 
     if (payment.status !== PaymentStatus.PROCESSING) {
-      return payment;
+      throw new NonRetryableError(
+        `Payment with status ${payment.status} cannot be processed`,
+      );
     }
     const approved = Math.random() < 0.8;
 

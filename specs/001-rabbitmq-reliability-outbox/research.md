@@ -11,7 +11,7 @@ No open NEEDS CLARIFICATION remains.
 - **Decision**: Classic `payment.requested.retry` queue with `x-message-ttl`
   (from `RETRY_TTL_MS`, default 5000) and dead-letter args pointing back at
   the main queue; worker rejects retryable failures with `nack(..., false,
-  false)` after republishing to the retry queue (or dead-lettering into it —
+false)` after republishing to the retry queue (or dead-lettering into it —
   see R-2). `requeue=true` is banned everywhere.
 - **Rationale**: Works on the stock `rabbitmq:4-management` image with zero
   plugins; delay is infrastructure-level (no blocked worker, per FR-006);
@@ -25,10 +25,13 @@ No open NEEDS CLARIFICATION remains.
 ## R-2: Attempt counting via `x-death` header
 
 - **Decision**: Read attempts from the raw AMQP message
-  (`RmqContext.getMessage().properties.headers['x-death']`: count entries
-  where `queue == paymentsQueue`); attempts ≥ `MAX_RETRIES` (3, env
-  `MAX_RETRIES`) ⇒ reject to DLQ, else route to retry queue. Log every
-  decision with attempt number.
+  (`RmqContext.getMessage().properties.headers['x-death']`: take the entry
+  where `queue == paymentRequestedRetryQueue`; attempt = its `count` + 1,
+  first delivery with no readable history = attempt 1). Republication to the
+  retry queue preserves properties/headers so the broker increments the count
+  on the next TTL expiration. Attempt ≥ `MAX_RETRIES` (3, env `MAX_RETRIES`)
+  ⇒ reject to DLQ, else republish to the retry queue and ack the original.
+  Log every decision with attempt number.
 - **Rationale**: Infrastructure-native, survives worker restarts, no extra
   DB write per attempt; raw message stays accessible beside Nest's
   `@Payload()` deserialization (already used for `ack`/`nack` today).
