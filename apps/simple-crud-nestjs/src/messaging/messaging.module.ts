@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PaymentsPublisher } from './messaging.payments.publisher';
+import { OutboxPublisher } from './outbox.publisher';
 import { constants } from '../../../../libs/contracts/src/payment-events';
 
 @Module({
@@ -24,6 +25,11 @@ import { constants } from '../../../../libs/contracts/src/payment-events';
             queue: constants.paymentsQueue,
             queueOptions: {
               durable: true,
+              arguments: {
+                'x-dead-letter-exchange': constants.paymentsDeadLetterExchange,
+                'x-dead-letter-routing-key':
+                  constants.paymentsDeadLetterRoutingKey,
+              },
             },
 
             persistent: true,
@@ -33,7 +39,7 @@ import { constants } from '../../../../libs/contracts/src/payment-events';
     ]),
   ],
 
-  providers: [PaymentsPublisher],
-  exports: [PaymentsPublisher],
+  providers: [PaymentsPublisher, OutboxPublisher],
+  exports: [PaymentsPublisher, OutboxPublisher],
 })
 export class MessagingModule {}

@@ -47,9 +47,8 @@ export class PaymentEventsController {
       console.log(
         `${event.correlationId} - Payment requested received: ${paymentId}`,
       );
-      const payment = await this.paymentWorkerService.processRequestedPayment(
-        event.payload.paymentId,
-      );
+      const payment =
+        await this.paymentWorkerService.processRequestedPayment(event);
 
       console.log(`Payment ${payment.id}: ${payment.status}`);
       channel.ack(message);

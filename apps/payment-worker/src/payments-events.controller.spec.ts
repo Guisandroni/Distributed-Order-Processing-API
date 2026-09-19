@@ -99,8 +99,10 @@ describe('PaymentEventsController (retry/DLQ)', () => {
     // Act: entregamos evento e contexto ao handler público do consumer.
     await controller.handlePaymentRequested(eventFixture, contextWith(message));
 
-    // Assert: o ID correto é processado e a mensagem é confirmada uma vez.
-    expect(paymentWorkerMock.processRequestedPayment).toHaveBeenCalledWith(30);
+    // Assert: o envelope correto é processado e a mensagem é confirmada uma vez.
+    expect(paymentWorkerMock.processRequestedPayment).toHaveBeenCalledWith(
+      eventFixture,
+    );
     expect(channelMock.ack).toHaveBeenCalledWith(message);
     expect(channelMock.nack).not.toHaveBeenCalled();
     expect(channelMock.sendToQueue).not.toHaveBeenCalled();

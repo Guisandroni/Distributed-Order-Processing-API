@@ -2,8 +2,11 @@ import { NestFactory } from '@nestjs/core';
 import { PaymentWorkerModule } from './payment-worker.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { constants } from '@lib/contracts';
+import { setupRabbitMqTopology } from './rabbitmq/setup-rabbitmq-topology';
 
 async function bootstrap() {
+  await setupRabbitMqTopology();
+
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     PaymentWorkerModule,
 
@@ -17,6 +20,12 @@ async function bootstrap() {
 
         queueOptions: {
           durable: true,
+
+          arguments: {
+            'x-dead-letter-exchange': constants.paymentsDeadLetterExchange,
+
+            'x-dead-letter-routing-key': constants.paymentsDeadLetterRoutingKey,
+          },
         },
         noAck: false,
       },

@@ -73,13 +73,13 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T014 [P] [US2] Unit test for duplicate `eventId` claim (second delivery returns current payment untouched, zero business writes) in `apps/payment-worker/src/payment-worker.service.spec.ts`
-- [ ] T015 [P] [US2] Integration test for redelivery + terminal-state rejection against real PostgreSQL in `apps/simple-crud-nestjs/test/payments.integration-spec.ts` (matches `.*\.integration-spec\.ts$`; MUST NOT import `@lib/contracts` — integration jest config has no such mapping)
+- [X] T014 [P] [US2] Unit test for duplicate `eventId` claim (second delivery returns current payment untouched, zero business writes) in `apps/payment-worker/src/payment-worker.service.spec.ts`
+- [X] T015 [P] [US2] Integration test for redelivery + terminal-state rejection against real PostgreSQL in `apps/simple-crud-nestjs/test/payments.integration-spec.ts` (matches `.*\.integration-spec\.ts$`; MUST NOT import `@lib/contracts` — integration jest config has no such mapping)
 
 ### Implementation for User Story 2
 
-- [ ] T016 [US2] Insert `ProcessedEvent` claim inside the approve/fail `$transaction` via `txPrisma` (unique-violation ⇒ duplicate ⇒ ack, no business writes) and raise `NonRetryableError` on terminal-state re-entry in `apps/payment-worker/src/payment-worker.service.ts` (depends on T004, T011)
-- [ ] T017 [US2] Distributed redelivery drill (same `eventId` twice ⇒ single effect) in `apps/simple-crud-nestjs/test/payment-flow.distributed-spec.ts` (depends on T016)
+- [X] T016 [US2] Insert `ProcessedEvent` claim inside the approve/fail `$transaction` via `txPrisma` (unique-violation ⇒ duplicate ⇒ ack, no business writes) and raise `NonRetryableError` on terminal-state re-entry in `apps/payment-worker/src/payment-worker.service.ts` (depends on T004, T011)
+- [X] T017 [US2] Distributed redelivery drill (same `eventId` twice ⇒ single effect) in `apps/simple-crud-nestjs/test/payment-flow.distributed-spec.ts` (depends on T016)
 
 **Checkpoint**: User Stories 1 AND 2 both work independently (SC-003)
 
@@ -95,15 +95,15 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T018 [P] [US3] Unit test for single-transaction persistence (payment + order + `OutboxEvent PENDING` commit together; publish failure keeps row `PENDING`) in `apps/simple-crud-nestjs/src/payments/payments.service.spec.ts`
-- [ ] T019 [P] [US3] Unit test for poller claiming (`SKIP LOCKED` batch, success ⇒ `SENT` + `processedAt`, failure ⇒ `attempts++` stays `PENDING`; corrupt envelope/unsupported type/invalid payload ⇒ `NonRetryableError`, logged, retained, never published) in `apps/simple-crud-nestjs/src/messaging/outbox.publisher.spec.ts`
+- [X] T018 [P] [US3] Unit test for single-transaction persistence (payment + order + `OutboxEvent PENDING` commit together; publish failure keeps row `PENDING`) in `apps/simple-crud-nestjs/src/payments/payments.service.spec.ts`
+- [X] T019 [P] [US3] Unit test for poller claiming (`SKIP LOCKED` batch, success ⇒ `SENT` + `processedAt`, failure ⇒ `attempts++` stays `PENDING`; corrupt envelope/unsupported type/invalid payload ⇒ `NonRetryableError`, logged, retained, never published) in `apps/simple-crud-nestjs/src/messaging/outbox.publisher.spec.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T020 [US3] Persist payment + order update + `OutboxEvent` (with full `DomainEvent` envelope JSON payload, `aggregateId` set to `String(order.id)`) in one `$transaction` via `txPrisma` in `apps/simple-crud-nestjs/src/payments/payments.service.ts` (depends on T004)
-- [ ] T021 [US3] Generalize `PaymentsPublisher` to publish any `DomainEvent` envelope in `apps/simple-crud-nestjs/src/messaging/messaging.payments.publisher.ts` (depends on T020)
-- [ ] T022 [US3] Create `OutboxPublisher` poller (`@Interval(OUTBOX_POLL_MS)`, batch `OUTBOX_BATCH_SIZE`, concurrent-safe claim, mark `SENT` + `processedAt` on success, `attempts++` while `PENDING` on publish failure; validate the envelope before publish — corrupt rows are logged as `NonRetryableError`, never published, never retried indefinitely, retained for operator inspection per `data-model.md`) in `apps/simple-crud-nestjs/src/messaging/outbox.publisher.ts` and register it in `apps/simple-crud-nestjs/src/messaging/messaging.module.ts` (depends on T008, T021)
-- [ ] T023 [US3] Broker-outage drill (pay while broker down ⇒ `PENDING` row; recover ⇒ published once, processed) in `apps/simple-crud-nestjs/test/payment-flow.distributed-spec.ts`; run a second `OutboxPublisher` against the same backlog during recovery and assert no row is concurrently claimed by both publishers (depends on T022)
+- [X] T020 [US3] Persist payment + order update + `OutboxEvent` (with full `DomainEvent` envelope JSON payload, `aggregateId` set to `String(order.id)`) in one `$transaction` via `txPrisma` in `apps/simple-crud-nestjs/src/payments/payments.service.ts` (depends on T004)
+- [X] T021 [US3] Generalize `PaymentsPublisher` to publish any `DomainEvent` envelope in `apps/simple-crud-nestjs/src/messaging/messaging.payments.publisher.ts` (depends on T020)
+- [X] T022 [US3] Create `OutboxPublisher` poller (`@Interval(OUTBOX_POLL_MS)`, batch `OUTBOX_BATCH_SIZE`, concurrent-safe claim, mark `SENT` + `processedAt` on success, `attempts++` while `PENDING` on publish failure; validate the envelope before publish — corrupt rows are logged as `NonRetryableError`, never published, never retried indefinitely, retained for operator inspection per `data-model.md`) in `apps/simple-crud-nestjs/src/messaging/outbox.publisher.ts` and register it in `apps/simple-crud-nestjs/src/messaging/messaging.module.ts` (depends on T008, T021)
+- [X] T023 [US3] Broker-outage drill (pay while broker down ⇒ `PENDING` row; recover ⇒ published once, processed) in `apps/simple-crud-nestjs/test/payment-flow.distributed-spec.ts`; run a second `OutboxPublisher` against the same backlog during recovery and assert no row is concurrently claimed by both publishers (depends on T022)
 
 **Checkpoint**: User Stories 1–3 all work independently (SC-004)
 
@@ -119,13 +119,13 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T024 [P] [US4] Unit test for result-event emission (approve ⇒ approved event, fail ⇒ failed event with `reason`, fresh `eventId`, propagated `correlationId`) in `apps/payment-worker/src/payment-worker.service.spec.ts`
+- [X] T024 [P] [US4] Unit test for result-event emission (approve ⇒ approved event, fail ⇒ failed event with `reason`, fresh `eventId`, propagated `correlationId`) in `apps/payment-worker/src/payment-worker.service.spec.ts`
 
 ### Implementation for User Story 4
 
-- [ ] T025 [US4] Register a dedicated RMQ emit `ClientProxy` bound to the `paymentsResultsQueue` queue (durable, declared in T007) in `apps/payment-worker/src/payment-worker.module.ts` for result-event publication; the worker microservice transport stays bound to `paymentsQueue` — result events travel exclusively through this emit client (depends on T005, T007)
-- [ ] T026 [US4] Emit `payment.approved` / `payment.failed` via the T025 emit client after commit (never on duplicate-ack path) in `apps/payment-worker/src/payment-worker.service.ts` (depends on T016, T025)
-- [ ] T027 [US4] Results-queue assertion (exactly-once result per payment, correlation match) in `apps/simple-crud-nestjs/test/payment-flow.distributed-spec.ts` (depends on T026)
+- [X] T025 [US4] Register a dedicated RMQ emit `ClientProxy` bound to the `paymentsResultsQueue` queue (durable, declared in T007) in `apps/payment-worker/src/payment-worker.module.ts` for result-event publication; the worker microservice transport stays bound to `paymentsQueue` — result events travel exclusively through this emit client (depends on T005, T007)
+- [X] T026 [US4] Emit `payment.approved` / `payment.failed` via the T025 emit client after commit (never on duplicate-ack path) in `apps/payment-worker/src/payment-worker.service.ts` (depends on T016, T025)
+- [X] T027 [US4] Results-queue assertion (exactly-once result per payment, correlation match) in `apps/simple-crud-nestjs/test/payment-flow.distributed-spec.ts` (depends on T026)
 
 **Checkpoint**: All user stories independently functional (SC-005, SC-006)
 
@@ -135,9 +135,9 @@
 
 **Purpose**: Cleanup and full-matrix verification
 
-- [ ] T028 [P] Remove dead commented code in touched files (`apps/simple-crud-nestjs/src/payments/payments.service.ts` commented approve/fail blocks, `apps/payment-worker/src/payments-events.controller.ts` commented ack lines, `apps/simple-crud-nestjs/src/messaging/messaging.payments.publisher.ts` commented subscriptions)
-- [ ] T029 Run gates: `prettier --check`, `pnpm build`, then the full matrix `pnpm test` + `pnpm test:integration` + `pnpm test:e2e` + `pnpm test:e2e:distributed` (once at the end, per Constitution V); confirm the T004 migration is applied to the test database before the integration/distributed suites run
-- [ ] T030 Validate `specs/001-rabbitmq-reliability-outbox/quickstart.md` scenarios 1–6 end-to-end (depends on T029)
+- [X] T028 [P] Remove dead commented code in touched files (`apps/simple-crud-nestjs/src/payments/payments.service.ts` commented approve/fail blocks, `apps/payment-worker/src/payments-events.controller.ts` commented ack lines, `apps/simple-crud-nestjs/src/messaging/messaging.payments.publisher.ts` commented subscriptions)
+- [X] T029 Run gates: `prettier --check`, `pnpm build`, then the full matrix `pnpm test` + `pnpm test:integration` + `pnpm test:e2e` + `pnpm test:e2e:distributed` (once at the end, per Constitution V); confirm the T004 migration is applied to the test database before the integration/distributed suites run
+- [X] T030 Validate `specs/001-rabbitmq-reliability-outbox/quickstart.md` scenarios 1–6 end-to-end (depends on T029)
 
 ---
 
@@ -232,3 +232,13 @@ Task: "T020 single-tx outbox write + T021 publisher generalize + T022 poller (US
 - Corrupt Outbox rows are not retried indefinitely: they are classified non-retryable, logged, never published, and retained for operator inspection per `data-model.md` (T019/T022).
 - `aggregateId` convention is fixed: `OutboxEvent.aggregateId = String(order.id)` for payment-related outbound events (T020).
 - Commit after each task or logical group; stop at any checkpoint to validate
+
+---
+
+## Phase 8: Convergence
+
+**Purpose**: Close the remaining spec↔code gaps found by the converge assessment (US2/US3/US1 verified green; US4 + polish open). Each item completes an existing unchecked task range — no duplication, no renumbering.
+
+- [X] T031 Complete US4 result events by executing existing T024–T027 (emit client, approve/fail emission with fresh `eventId` + propagated `correlationId`, results-queue drill) per FR-009, SC-005, US4/AC1–AC3 (missing)
+- [X] T032 Complete polish by executing existing T028–T030 (dead-code removal, full-matrix gates, quickstart scenarios 1–6) per FR-012, SC-006 (partial)
+- [X] T033 Review out-of-scope branch WIP (`products` createMany endpoint/service, `payments.findAll` change, `docker-compose.yml` credential swap, `accessaccess` bearer typo): justify/extract into its own change or revert per plan: structure decision (unrequested) — DECISION (owner): keep everything as-is in the working tree; no revert, no extraction

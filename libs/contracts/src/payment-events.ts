@@ -9,6 +9,7 @@ export const constants = {
   paymentRequestedRetryQueue: 'payment.requested.retry',
 
   paymentsResultsQueue: 'payments.results',
+  paymentsResultsClient: 'PAYMENTS_RESULTS_CLIENT',
   paymentApproved: 'payment.approved',
   paymentFailed: 'payment.failed',
   paymentApprovedEvent: 'PAYMENT_APPROVED_EVENT',
