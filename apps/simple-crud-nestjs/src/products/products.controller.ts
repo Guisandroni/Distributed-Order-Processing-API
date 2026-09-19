@@ -49,7 +49,24 @@ export class ProductsController {
     return this.productsService.create(createProductDto);
   }
 
-  @ApiOperation({ summary: 'Listar produtos ativos' })
+  @ApiOperation({ summary: 'Criar vários produtos' })
+  @ApiCreatedResponse({
+    description: 'Produtos criados com sucesso',
+    type: [Product],
+  })
+  @ApiBadRequestResponse({ description: 'Dados do produto inválidos' })
+  @ApiConflictResponse({ description: 'SKU já cadastrado' })
+  @ApiUnauthorizedResponse({
+    description: 'Token ausente, inválido ou expirado',
+  })
+  @ApiBearerAuth('accessaccess')
+  @UseGuards(AuthGuard)
+  @Post('many')
+  createMany(@Body() createdProductDto: CreateProductDto[]) {
+    return this.productsService.createMany(createdProductDto);
+  }
+
+  @ApiOperation({ summary: 'Listar produtos' })
   @ApiOkResponse({ type: [Product] })
   @Get()
   findAll() {

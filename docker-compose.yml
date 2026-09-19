@@ -5,9 +5,9 @@ services:
     restart: unless-stopped
 
     environment:
-      POSTGRES_USER: nestjpostgres
-      POSTGRES_PASSWORD: nestjpostgres
-      POSTGRES_DB: order_platform
+      POSTGRES_USER: nestjsCrud
+      POSTGRES_PASSWORD: nestjsCrud
+      POSTGRES_DB: nestjsCrud
 
     ports:
       - 2020:5432

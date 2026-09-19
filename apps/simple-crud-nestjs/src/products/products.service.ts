@@ -33,6 +33,29 @@ export class ProductsService {
     return data;
   }
 
+  async createMany(dto: CreateProductDto[]) {
+    const existingProduct = await this.prisma.product.findUnique({
+      where: {
+        sku: dto[0].sku,
+      },
+    });
+
+    if (existingProduct) {
+      throw new ConflictException('SKU already exists');
+    }
+    const data = await this.prisma.product.createMany({
+      data: dto.map((d) => ({
+        sku: d.sku,
+        name: d.name,
+        description: d.description,
+        price: d.price,
+        stock: d.stock,
+      })),
+    });
+
+    return data;
+  }
+
   async findAll() {
     const data = await this.prisma.product.findMany({
       where: {

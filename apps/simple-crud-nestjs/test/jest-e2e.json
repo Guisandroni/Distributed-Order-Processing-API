@@ -8,6 +8,7 @@
     "^.+\\.(t|j)s$": "ts-jest"
   },
   "moduleNameMapper": {
+    "^@nestjs/schedule$": "<rootDir>/apps/simple-crud-nestjs/test/vendor/nestjs-schedule/index.js",
     "^@lib/prisma$": "<rootDir>/libs/prisma/src",
     "^@lib/prisma/(.*)$": "<rootDir>/libs/prisma/src/$1",
     "^@lib/contracts$": "<rootDir>/libs/contracts/src",

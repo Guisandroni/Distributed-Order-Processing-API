@@ -29,6 +29,7 @@ import {
 } from '@nestjs/swagger';
 import { Order } from './entities/order.entity';
 import { Payment } from '../payments/entities/payment.entity';
+import { randomUUID } from 'node:crypto';
 
 @ApiTags('orders')
 @ApiBearerAuth('access-token')
@@ -121,7 +122,8 @@ export class OrdersController {
     @Param('id', ParseIntPipe) id: number,
     @Req() request: AuthenticatedRequest,
   ) {
-    return this.paymentsService.process(id, request.user.sub);
+    const correlationId = request.header(`x-correlation-id`) ?? randomUUID();
+    return this.paymentsService.process(id, request.user.sub, correlationId);
   }
 
   // @UseGuards(AuthGuard)

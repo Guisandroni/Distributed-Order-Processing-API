@@ -22,6 +22,7 @@ describe('Order platform API (e2e)', () => {
   let prisma: PrismaService;
   const publisherMock = {
     publishPaymentRequested: jest.fn(),
+    publish: jest.fn(),
   };
 
   async function registerAndGetToken(email: string): Promise<string> {
@@ -77,6 +78,9 @@ describe('Order platform API (e2e)', () => {
 
   beforeEach(async () => {
     publisherMock.publishPaymentRequested.mockReset();
+    publisherMock.publish.mockReset();
+    await prisma.outboxEvent.deleteMany();
+    await prisma.processedEvent.deleteMany();
     await prisma.payment.deleteMany();
     await prisma.orderItem.deleteMany();
     await prisma.order.deleteMany();
@@ -312,11 +316,25 @@ describe('Order platform API (e2e)', () => {
         status: 'PROCESSING',
         amount: '50',
       });
-      expect(publisherMock.publishPaymentRequested).toHaveBeenCalledWith({
-        paymentId: paymentResponse.body.id,
-        orderId: orderResponse.body.id,
-        userId: registerResponse.body.user.id,
-        amount: '50',
+      // Sem publish direto: a intenção durável fica no outbox (PENDING)
+      // e o poller entrega depois — pagar com o broker fora do ar funciona.
+      expect(publisherMock.publishPaymentRequested).not.toHaveBeenCalled();
+      expect(publisherMock.publish).not.toHaveBeenCalled();
+      const outboxRow = await prisma.outboxEvent.findFirst({
+        where: { aggregateId: String(orderResponse.body.id) },
+      });
+      expect(outboxRow).toMatchObject({
+        eventType: 'payment.requested',
+        aggregateId: String(orderResponse.body.id),
+      });
+      expect(outboxRow?.payload).toMatchObject({
+        eventType: 'payment.requested',
+        payload: {
+          paymentId: paymentResponse.body.id,
+          orderId: orderResponse.body.id,
+          userId: registerResponse.body.user.id,
+          amount: '50',
+        },
       });
 
       const finalProductResponse = await request(app.getHttpServer())

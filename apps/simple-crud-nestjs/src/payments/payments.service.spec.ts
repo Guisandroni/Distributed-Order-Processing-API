@@ -16,6 +16,9 @@ describe('PaymentsService', () => {
     order: {
       update: jest.fn(),
     },
+    outboxEvent: {
+      create: jest.fn(),
+    },
   };
 
   const prismaMock = {
@@ -67,7 +70,7 @@ describe('PaymentsService', () => {
     // e deixaria passar por engano o NotFoundError importado do RxJS.
     let capturedError: unknown;
     try {
-      await service.process(8, 7);
+      await service.process(8, 7, 'corr-1');
     } catch (error) {
       capturedError = error;
     }
@@ -87,7 +90,7 @@ describe('PaymentsService', () => {
     });
 
     // Act + Assert: nenhuma escrita ou publicação ocorre nesse ramo.
-    await expect(service.process(8, 7)).rejects.toEqual(
+    await expect(service.process(8, 7, 'corr-1')).rejects.toEqual(
       new BadRequestException(
         `Order with status ${OrderStatus.CANCELLED} cannot be paid`,
       ),
@@ -104,14 +107,14 @@ describe('PaymentsService', () => {
     });
 
     // Act + Assert: o mesmo pedido não pode gerar um segundo pagamento.
-    await expect(service.process(8, 7)).rejects.toEqual(
+    await expect(service.process(8, 7, 'corr-1')).rejects.toEqual(
       new BadRequestException('Order already have payment exists'),
     );
     expect(prismaMock.$transaction).not.toHaveBeenCalled();
     expect(publisherMock.publishPaymentRequested).not.toHaveBeenCalled();
   });
 
-  it('cria pagamento, atualiza pedido e publica o evento solicitado', async () => {
+  it('cria pagamento, atualiza pedido e registra o outbox sem publicar direto', async () => {
     // Arrange: pedido pendente e sem pagamento pode entrar em processamento.
     const payment = {
       id: 30,
@@ -125,9 +128,10 @@ describe('PaymentsService', () => {
       ...pendingOrder,
       status: OrderStatus.PROCESSING,
     });
+    txPrismaMock.outboxEvent.create.mockResolvedValue({ id: 'outbox-1' });
 
-    // Act: process executa persistência e, depois, publica o evento.
-    const result = await service.process(8, 7);
+    // Act: process persiste a intenção; o poller publica depois.
+    const result = await service.process(8, 7, 'corr-1');
 
     // Assert: pagamento e pedido mudam juntos para PROCESSING.
     expect(result).toBe(payment);
@@ -144,12 +148,13 @@ describe('PaymentsService', () => {
     });
 
     // O evento usa apenas dados públicos e converte Decimal para string.
-    expect(publisherMock.publishPaymentRequested).toHaveBeenCalledWith({
-      paymentId: 30,
-      orderId: 8,
-      userId: 7,
-      amount: '26',
+    expect(txPrismaMock.outboxEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        eventType: 'payment.requested',
+        aggregateId: '8',
+      }),
     });
+    expect(publisherMock.publishPaymentRequested).not.toHaveBeenCalled();
   });
 
   it('não publica evento quando a transação falha', async () => {
@@ -159,7 +164,74 @@ describe('PaymentsService', () => {
     prismaMock.$transaction.mockRejectedValue(transactionError);
 
     // Act + Assert: o erro propaga e nenhum consumidor recebe evento inválido.
-    await expect(service.process(8, 7)).rejects.toBe(transactionError);
+    await expect(service.process(8, 7, 'corr-1')).rejects.toBe(
+      transactionError,
+    );
+    expect(publisherMock.publishPaymentRequested).not.toHaveBeenCalled();
+  });
+
+  it('persiste pagamento + pedido + OutboxEvent PENDING na mesma transação (T018)', async () => {
+    // Arrange: pedido pendente e sem pagamento pode entrar em processamento.
+    const payment = {
+      id: 30,
+      orderId: 8,
+      status: PaymentStatus.PROCESSING,
+      amount: new Prisma.Decimal('26.00'),
+    };
+    prismaMock.order.findFirst.mockResolvedValue(pendingOrder);
+    txPrismaMock.payment.create.mockResolvedValue(payment);
+    txPrismaMock.order.update.mockResolvedValue({
+      ...pendingOrder,
+      status: OrderStatus.PROCESSING,
+    });
+    txPrismaMock.outboxEvent.create.mockResolvedValue({ id: 'outbox-1' });
+
+    // Act: process persiste a intenção de publicar junto com o domínio.
+    const result = await service.process(8, 7, 'corr-1');
+
+    // Assert: fronteira transacional única com as três escritas dentro.
+    expect(result).toBe(payment);
+    expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
+    expect(txPrismaMock.payment.create).toHaveBeenCalledTimes(1);
+    expect(txPrismaMock.order.update).toHaveBeenCalledTimes(1);
+    expect(txPrismaMock.outboxEvent.create).toHaveBeenCalledTimes(1);
+    expect(txPrismaMock.outboxEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        eventType: 'payment.requested',
+        aggregateId: '8',
+      }),
+    });
+
+    // O payload é o envelope DomainEvent completo serializado em JSON.
+    const outboxData = txPrismaMock.outboxEvent.create.mock.calls[0][0].data;
+    expect(outboxData.payload).toMatchObject({
+      eventType: 'payment.requested',
+      correlationId: 'corr-1',
+      payload: {
+        paymentId: 30,
+        orderId: 8,
+        userId: 7,
+        amount: '26',
+      },
+    });
+    expect(typeof outboxData.payload.eventId).toBe('string');
+    expect(typeof outboxData.payload.occurredAt).toBe('string');
+
+    // Sem publish direto: a entrega é dever do poller (sobrevive ao broker down).
+    expect(publisherMock.publishPaymentRequested).not.toHaveBeenCalled();
+  });
+
+  it('não cria outbox quando a transação falha (T018)', async () => {
+    // Arrange: o pedido existe, mas a fronteira transacional rejeita.
+    const transactionError = new Error('transaction failed');
+    prismaMock.order.findFirst.mockResolvedValue(pendingOrder);
+    prismaMock.$transaction.mockRejectedValue(transactionError);
+
+    // Act + Assert: nada persiste e nada é publicado.
+    await expect(service.process(8, 7, 'corr-1')).rejects.toBe(
+      transactionError,
+    );
+    expect(txPrismaMock.outboxEvent.create).not.toHaveBeenCalled();
     expect(publisherMock.publishPaymentRequested).not.toHaveBeenCalled();
   });
 });

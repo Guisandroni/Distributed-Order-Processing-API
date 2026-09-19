@@ -9,6 +9,7 @@ import {
   constants,
   PaymentRequestedEvent,
 } from '../../../../libs/contracts/src/payment-events';
+import { DomainEvent } from '../../../../libs/contracts/src/domain-event';
 @Injectable()
 export class PaymentsPublisher
   implements OnApplicationBootstrap, OnApplicationShutdown
@@ -20,14 +21,6 @@ export class PaymentsPublisher
   ) {}
 
   async onApplicationBootstrap() {
-    // this.client.status.subscribe((status) => {
-    //   console.log(`[RMQ CONSUMER STATUS]: ${status}`);
-    // });
-
-    // this.client.on( (error) => {
-    //   console.error(error);
-    // });
-
     await this.client.connect();
   }
 
@@ -36,6 +29,17 @@ export class PaymentsPublisher
   }
 
   publishPaymentRequested(event: PaymentRequestedEvent) {
-    this.client.emit(constants.paymentRequestedEvent, event);
+    this.publish(event);
+  }
+
+  // Entrada genérica do outbox: qualquer envelope DomainEvent válido.
+  // Mapeia eventType → pattern RMQ (hoje só payment.requested existe;
+  // tipos futuros caem no próprio eventType como pattern).
+  publish(event: DomainEvent<unknown>) {
+    const pattern =
+      event.eventType === constants.paymentRequested
+        ? constants.paymentRequestedEvent
+        : event.eventType;
+    this.client.emit(pattern, event);
   }
 }

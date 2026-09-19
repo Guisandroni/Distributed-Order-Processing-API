@@ -62,3 +62,10 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 .windsurf/*
 
 docs/*
+
+# Universal temp/OS artifacts
+Thumbs.db
+*.tmp
+*.swp
+opencode
+.specify
