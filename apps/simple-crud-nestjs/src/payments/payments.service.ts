@@ -6,6 +6,7 @@ import {
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { PrismaService, OrderStatus, PaymentStatus, Prisma } from '@lib/prisma';
+import { MetricsService } from '../metrics/metrics.service';
 import { PaymentsPublisher } from '../messaging/messaging.payments.publisher';
 import { randomUUID } from 'node:crypto';
 import { constants, PaymentRequestedEvent } from '@lib/contracts';
@@ -15,6 +16,7 @@ export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly paymentPublisher: PaymentsPublisher,
+    private readonly metrics: MetricsService,
   ) {}
 
   async process(orderId: number, userId: number, correlationId: string) {
@@ -94,6 +96,7 @@ export class PaymentsService {
       return payment;
     });
 
+    this.metrics.paymentRequested();
     return payment;
   }
   create(createPaymentDto: CreatePaymentDto) {

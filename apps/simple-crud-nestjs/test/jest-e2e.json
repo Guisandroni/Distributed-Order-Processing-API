@@ -9,6 +9,7 @@
   },
   "moduleNameMapper": {
     "^@nestjs/schedule$": "<rootDir>/apps/simple-crud-nestjs/test/vendor/nestjs-schedule/index.js",
+    "^@nestjs/terminus$": "<rootDir>/apps/simple-crud-nestjs/test/vendor/nestjs-terminus/index.js",
     "^@lib/prisma$": "<rootDir>/libs/prisma/src",
     "^@lib/prisma/(.*)$": "<rootDir>/libs/prisma/src/$1",
     "^@lib/contracts$": "<rootDir>/libs/contracts/src",

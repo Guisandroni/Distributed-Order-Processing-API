@@ -6,10 +6,16 @@ import {
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { PrismaService } from '@lib/prisma';
+import { cacheConstants, productKey } from '@lib/contracts';
+import type { Product } from 'generated/prisma/client';
+import { CacheService } from '../cache/cache.service';
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: CacheService,
+  ) {}
   async create(dto: CreateProductDto) {
     const existingProduct = await this.prisma.product.findUnique({
       where: {
@@ -20,7 +26,7 @@ export class ProductsService {
     if (existingProduct) {
       throw new ConflictException('SKU already exists');
     }
-    const data = this.prisma.product.create({
+    const data = await this.prisma.product.create({
       data: {
         sku: dto.sku,
         name: dto.name,
@@ -30,6 +36,7 @@ export class ProductsService {
       },
     });
 
+    await this.cache.del(cacheConstants.productsListKey);
     return data;
   }
 
@@ -53,10 +60,18 @@ export class ProductsService {
       })),
     });
 
+    await this.cache.del(cacheConstants.productsListKey);
     return data;
   }
 
-  async findAll() {
+  async findAll(): Promise<Product[]> {
+    const cached = await this.cache.get<Product[]>(
+      cacheConstants.productsListKey,
+    );
+    if (cached !== null) {
+      return cached;
+    }
+
     const data = await this.prisma.product.findMany({
       where: {
         active: true,
@@ -66,10 +81,16 @@ export class ProductsService {
       },
     });
 
+    await this.cache.set(cacheConstants.productsListKey, data);
     return data;
   }
 
-  async findOne(id: number) {
+  async findOne(id: number): Promise<Product> {
+    const cached = await this.cache.get<Product>(productKey(id));
+    if (cached !== null) {
+      return cached;
+    }
+
     const data = await this.prisma.product.findUnique({
       where: {
         id,
@@ -78,6 +99,8 @@ export class ProductsService {
     if (!data) {
       throw new NotFoundException('Product not found');
     }
+
+    await this.cache.set(productKey(id), data);
     return data;
   }
 
@@ -96,18 +119,21 @@ export class ProductsService {
       }
     }
 
-    return this.prisma.product.update({
+    const data = await this.prisma.product.update({
       where: {
         id,
       },
       data: dto,
     });
+
+    await this.cache.del(cacheConstants.productsListKey, productKey(id));
+    return data;
   }
 
   async remove(id: number) {
     await this.findOne(id);
     //desativa do db
-    const data = this.prisma.product.update({
+    const data = await this.prisma.product.update({
       where: {
         id,
       },
@@ -115,6 +141,8 @@ export class ProductsService {
         active: false,
       },
     });
+
+    await this.cache.del(cacheConstants.productsListKey, productKey(id));
     return data;
   }
 }

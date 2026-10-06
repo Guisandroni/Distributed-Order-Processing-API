@@ -6,10 +6,14 @@ import {
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { PrismaService, OrderStatus, Prisma } from '@lib/prisma';
+import { MetricsService } from '../metrics/metrics.service';
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly metrics: MetricsService,
+  ) {}
   async create(createOrderDto: CreateOrderDto, userId: number) {
     const productsIds = [
       ...new Set(createOrderDto.items.map((item) => item.productId)),
@@ -57,7 +61,7 @@ export class OrdersService {
       }
     }
 
-    return this.prisma.$transaction(async (txPrisma) => {
+    const order = await this.prisma.$transaction(async (txPrisma) => {
       for (const [productId, quantity] of requestedQuantityByProduct) {
         // A condição e o decremento formam uma única escrita atômica no
         // PostgreSQL. Duas transações não conseguem reservar a mesma unidade.
@@ -110,6 +114,9 @@ export class OrdersService {
         },
       });
     });
+
+    this.metrics.orderCreated();
+    return order;
   }
 
   async cancel(id: number, userId: number) {
@@ -135,7 +142,7 @@ export class OrdersService {
       );
     }
 
-    return this.prisma.$transaction(async (txPrisma) => {
+    const cancelled = await this.prisma.$transaction(async (txPrisma) => {
       const cancelledOrder = await txPrisma.order.update({
         where: {
           id: order.id,
@@ -161,6 +168,9 @@ export class OrdersService {
 
       return cancelledOrder;
     });
+
+    this.metrics.orderCancelled();
+    return cancelled;
   }
 
   findAll() {
