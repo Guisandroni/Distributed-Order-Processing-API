@@ -32,3 +32,15 @@ services:
       interval: 3s
       timeout: 5s
       retries: 20
+
+  redis-test:
+    image: redis:7-alpine
+    ports:
+      - '6380:6379'
+    tmpfs:
+      - /data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 2s
+      timeout: 2s
+      retries: 15

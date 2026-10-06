@@ -2,6 +2,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { OrderStatus, PaymentStatus, Prisma, PrismaService } from '@lib/prisma';
 import { PaymentsPublisher } from '../messaging/messaging.payments.publisher';
+import { MetricsService } from '../metrics/metrics.service';
 import { PaymentsService } from './payments.service';
 
 describe('PaymentsService', () => {
@@ -55,6 +56,7 @@ describe('PaymentsService', () => {
         PaymentsService,
         { provide: PrismaService, useValue: prismaMock },
         { provide: PaymentsPublisher, useValue: publisherMock },
+        { provide: MetricsService, useValue: { paymentRequested: jest.fn() } },
       ],
     }).compile();
 

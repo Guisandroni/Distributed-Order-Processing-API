@@ -1,0 +1,17 @@
+# Non-secret configuration only. Secrets (DATABASE_URL, JWT_SECRET,
+# RABBITMQ_URL, REDIS_URL with credentials) come from the
+# `order-platform-secrets` Secret, created imperatively (see T027 drill) —
+# never in manifests.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+  namespace: order-platform
+data:
+  PORT: "3333"
+  CACHE_TTL_MS: "30000"
+  MAX_RETRIES: "3"
+  RETRY_TTL_MS: "5000"
+  OUTBOX_POLL_MS: "5000"
+  OUTBOX_BATCH_SIZE: "20"
+  LOG_LEVEL: "info"
