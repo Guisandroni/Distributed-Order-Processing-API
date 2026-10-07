@@ -1,7 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { OrderStatus, Prisma, PrismaService } from '@lib/prisma';
-import { MetricsService } from '../metrics/metrics.service';
 import { OrdersService } from './orders.service';
 
 describe('OrdersService', () => {
@@ -63,10 +62,6 @@ describe('OrdersService', () => {
       providers: [
         OrdersService,
         { provide: PrismaService, useValue: prismaMock },
-        {
-          provide: MetricsService,
-          useValue: { orderCreated: jest.fn(), orderCancelled: jest.fn() },
-        },
       ],
     }).compile();
 

@@ -71,9 +71,3 @@ opencode
 .specify
 specs
 translateSpec
-
-# Terraform (never commit state or provider installs; lock file stays tracked)
-.terraform/
-*.tfstate
-*.tfstate.*
-*.tfvars

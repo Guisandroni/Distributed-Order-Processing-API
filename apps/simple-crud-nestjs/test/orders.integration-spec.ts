@@ -32,15 +32,8 @@ describe('OrdersService com Prisma e PostgreSQL (integration)', () => {
     } as ConfigService;
 
     prisma = new PrismaService(configService);
-    ordersService = new OrdersService(prisma, {
-      orderCreated: jest.fn(),
-      orderCancelled: jest.fn(),
-    } as never);
-    productsService = new ProductsService(prisma, {
-      get: async () => null,
-      set: async () => undefined,
-      del: async () => undefined,
-    } as never);
+    ordersService = new OrdersService(prisma);
+    productsService = new ProductsService(prisma);
     await prisma.$connect();
   });
 

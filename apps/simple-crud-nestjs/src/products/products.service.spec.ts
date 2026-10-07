@@ -1,7 +1,6 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '@lib/prisma';
-import { CacheService } from '../cache/cache.service';
 import { ProductsService } from './products.service';
 
 describe('ProductsService', () => {
@@ -16,14 +15,6 @@ describe('ProductsService', () => {
       create: jest.fn(),
       update: jest.fn(),
     },
-  };
-
-  // Cache sempre-miss por padrão: os testes legados exercem o caminho de
-  // banco; o comportamento de HIT vive em cache.service.spec.ts.
-  const cacheMock = {
-    get: jest.fn(),
-    set: jest.fn(),
-    del: jest.fn(),
   };
 
   // A fixture usa valores literais conhecidos. Ela é reutilizada apenas para
@@ -41,7 +32,6 @@ describe('ProductsService', () => {
   beforeEach(async () => {
     // Limpa chamadas e respostas anteriores para manter os casos isolados.
     jest.resetAllMocks();
-    cacheMock.get.mockResolvedValue(null);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -49,7 +39,6 @@ describe('ProductsService', () => {
         // ProductsService exige PrismaService no construtor. `useValue`
         // substitui essa dependência real pelo mock definido acima.
         { provide: PrismaService, useValue: prismaMock },
-        { provide: CacheService, useValue: cacheMock },
       ],
     }).compile();
 

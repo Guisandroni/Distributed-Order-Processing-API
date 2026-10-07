@@ -10,8 +10,6 @@
   "moduleNameMapper": {
     "^@lib/prisma$": "<rootDir>/libs/prisma/src",
     "^@lib/prisma/(.*)$": "<rootDir>/libs/prisma/src/$1",
-    "^@lib/contracts$": "<rootDir>/libs/contracts/src",
-    "^@lib/contracts/(.*)$": "<rootDir>/libs/contracts/src/$1",
     "^generated/(.*)$": "<rootDir>/generated/$1",
     "^(\\.{1,2}/.*)\\.js$": "$1"
   }

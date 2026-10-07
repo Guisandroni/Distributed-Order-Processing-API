@@ -85,15 +85,8 @@ describe('PaymentWorkerService redelivery com PostgreSQL real (integration)', ()
 
     prisma = new PrismaService(configService);
     worker = new PaymentWorkerService(prisma, { emit: jest.fn() } as never);
-    ordersService = new OrdersService(prisma, {
-      orderCreated: jest.fn(),
-      orderCancelled: jest.fn(),
-    } as never);
-    productsService = new ProductsService(prisma, {
-      get: async () => null,
-      set: async () => undefined,
-      del: async () => undefined,
-    } as never);
+    ordersService = new OrdersService(prisma);
+    productsService = new ProductsService(prisma);
     await prisma.$connect();
   });
 
