@@ -1,4 +1,9 @@
+packages:
+  - "server"
+  - "web"
+
 allowBuilds:
+  '@parcel/watcher': false
   '@prisma/engines': true
   '@scarf/scarf': true
   prisma: true
